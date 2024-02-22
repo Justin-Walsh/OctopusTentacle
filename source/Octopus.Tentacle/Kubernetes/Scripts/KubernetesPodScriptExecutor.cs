@@ -8,22 +8,22 @@ using Octopus.Tentacle.Scripts;
 
 namespace Octopus.Tentacle.Kubernetes.Scripts
 {
-    public class KubernetesJobScriptExecutor : IScriptExecutor
+    public class KubernetesPodScriptExecutor : IScriptExecutor
     {
-        readonly IKubernetesJobService jobService;
+        readonly IKubernetesPodService podService;
         readonly IKubernetesSecretService secretService;
-        readonly IKubernetesJobContainerResolver containerResolver;
+        readonly IKubernetesPodContainerResolver containerResolver;
         readonly IApplicationInstanceSelector appInstanceSelector;
-        readonly IKubernetesJobStatusProvider jobsStatusProvider;
+        readonly IKubernetesPodStatusProvider podStatusProvider;
         readonly ISystemLog log;
 
-        public KubernetesJobScriptExecutor(IKubernetesJobService jobService, IKubernetesSecretService secretService, IKubernetesJobContainerResolver containerResolver, IApplicationInstanceSelector appInstanceSelector, IKubernetesJobStatusProvider jobsStatusProvider, ISystemLog log)
+        public KubernetesPodScriptExecutor(IKubernetesPodService podService, IKubernetesSecretService secretService, IKubernetesPodContainerResolver containerResolver, IApplicationInstanceSelector appInstanceSelector, IKubernetesPodStatusProvider podStatusProvider, ISystemLog log)
         {
-            this.jobService = jobService;
+            this.podService = podService;
             this.secretService = secretService;
             this.containerResolver = containerResolver;
             this.appInstanceSelector = appInstanceSelector;
-            this.jobsStatusProvider = jobsStatusProvider;
+            this.podStatusProvider = podStatusProvider;
             this.log = log;
         }
 
@@ -37,8 +37,8 @@ namespace Octopus.Tentacle.Kubernetes.Scripts
                 command.ScriptTicket,
                 command.TaskId, log,
                 scriptStateStore,
-                jobService,
-                jobsStatusProvider,
+                podService,
+                podStatusProvider,
                 secretService,
                 containerResolver,
                 appInstanceSelector,

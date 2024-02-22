@@ -5,15 +5,15 @@ using Octopus.Diagnostics;
 
 namespace Octopus.Tentacle.Kubernetes
 {
-    public interface IKubernetesJobMonitorTask
+    public interface IKubernetesPodMonitorTask
     {
         void Start();
         void Stop();
     }
 
-    public class KubernetesJobMonitorTask: IKubernetesJobMonitorTask, IDisposable
+    public class KubernetesPodMonitorTask: IKubernetesPodMonitorTask, IDisposable
     {
-        readonly IKubernetesJobMonitor jobMonitor;
+        readonly IKubernetesPodMonitor podMonitor;
         readonly ISystemLog log;
         readonly CancellationTokenSource cancellationTokenSource = new ();
 
@@ -21,9 +21,9 @@ namespace Octopus.Tentacle.Kubernetes
 
         Task? monitorTask;
 
-        public KubernetesJobMonitorTask(IKubernetesJobMonitor jobMonitor, ISystemLog log)
+        public KubernetesPodMonitorTask(IKubernetesPodMonitor podMonitor, ISystemLog log)
         {
-            this.jobMonitor = jobMonitor;
+            this.podMonitor = podMonitor;
             this.log = log;
         }
 
@@ -33,12 +33,12 @@ namespace Octopus.Tentacle.Kubernetes
             {
                 if (monitorTask is not null)
                 {
-                    log.Error("Kubernetes Job Monitor task already running.");
+                    log.Error("Kubernetes Pod Monitor task already running.");
                     return;
                 }
 
-                log.Info("Starting Kubernetes Job Monitor");
-                monitorTask = Task.Run(() => jobMonitor.StartAsync(cancellationTokenSource.Token));
+                log.Info("Starting Kubernetes Pod Monitor");
+                monitorTask = Task.Run(() => podMonitor.StartAsync(cancellationTokenSource.Token));
             }
         }
 
@@ -50,18 +50,18 @@ namespace Octopus.Tentacle.Kubernetes
 
                 try
                 {
-                    log.Info("Stopping Kubernetes Job Monitor");
+                    log.Info("Stopping Kubernetes Pod Monitor");
                     cancellationTokenSource.Cancel();
 
                     monitorTask.Wait();
                 }
                 catch (Exception e)
                 {
-                    log.Error(e, "Could not stop Kubernetes Job Monitor cleaner");
+                    log.Error(e, "Could not stop Kubernetes Pod Monitor cleaner");
                 }
                 finally
                 {
-                    log.Info("Stopped Kubernetes Job Monitor");
+                    log.Info("Stopped Kubernetes Pod Monitor");
                     monitorTask = null;
                 }
             }
@@ -69,7 +69,7 @@ namespace Octopus.Tentacle.Kubernetes
 
         public void Dispose()
         {
-            log.Info("Disposing of Kubernetes Job Monitor");
+            log.Info("Disposing of Kubernetes Pod Monitor");
             Stop();
             cancellationTokenSource.Dispose();
         }

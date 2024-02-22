@@ -25,7 +25,7 @@ namespace Octopus.Tentacle.Services
             // Register the script executor based on if we should
             if (KubernetesConfig.UseJobs)
             {
-                builder.RegisterType<KubernetesJobScriptExecutor>().AsSelf().As<IScriptExecutor>();
+                builder.RegisterType<KubernetesPodScriptExecutor>().AsSelf().As<IScriptExecutor>();
             }
             else
             {

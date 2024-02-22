@@ -6,15 +6,14 @@ namespace Octopus.Tentacle.Kubernetes
     {
         protected override void Load(ContainerBuilder builder)
         {
-            builder.RegisterType<KubernetesJobService>().As<IKubernetesJobService>().SingleInstance();
             builder.RegisterType<KubernetesClusterService>().As<IKubernetesClusterService>().SingleInstance();
-            builder.RegisterType<KubernetesJobContainerResolver>().As<IKubernetesJobContainerResolver>().SingleInstance();
+            builder.RegisterType<KubernetesPodContainerResolver>().As<IKubernetesPodContainerResolver>().SingleInstance();
             builder.RegisterType<KubernetesConfigMapService>().As<IKubernetesConfigMapService>().SingleInstance();
             builder.RegisterType<KubernetesSecretService>().As<IKubernetesSecretService>().SingleInstance();
             builder.RegisterType<KubernetesPodService>().As<IKubernetesPodService>().SingleInstance();
 
-            builder.RegisterType<KubernetesJobMonitorTask>().As<IKubernetesJobMonitorTask>().SingleInstance();
-            builder.RegisterType<KubernetesJobMonitor>().As<IKubernetesJobMonitor>().As<IKubernetesJobStatusProvider>().SingleInstance();
+            builder.RegisterType<KubernetesPodMonitorTask>().As<IKubernetesPodMonitorTask>().SingleInstance();
+            builder.RegisterType<KubernetesPodMonitor>().As<IKubernetesPodMonitor>().As<IKubernetesPodStatusProvider>().SingleInstance();
 
 #if DEBUG
             builder.RegisterType<LocalMachineKubernetesClientConfigProvider>().As<IKubernetesClientConfigProvider>().SingleInstance();

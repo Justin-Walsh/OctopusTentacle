@@ -11,18 +11,18 @@ using Octopus.Tentacle.Util;
 
 namespace Octopus.Tentacle.Kubernetes.Scripts
 {
-    public class KubernetesJobOutputStreamWriter
+    public class KubernetesPodOutputStreamWriter
     {
         readonly IScriptWorkspace workspace;
         long lastStdOutOffset;
         long lastStdErrOffset;
 
-        public KubernetesJobOutputStreamWriter(IScriptWorkspace workspace)
+        public KubernetesPodOutputStreamWriter(IScriptWorkspace workspace)
         {
             this.workspace = workspace;
         }
 
-        public async Task StreamJobLogsToScriptLog(IScriptLogWriter writer, CancellationToken cancellationToken, bool isFinalRead = false)
+        public async Task StreamPodLogsToScriptLog(IScriptLogWriter writer, CancellationToken cancellationToken, bool isFinalRead = false)
         {
             try
             {

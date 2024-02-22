@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,79 +10,79 @@ using Octopus.Tentacle.Contracts;
 
 namespace Octopus.Tentacle.Kubernetes
 {
-    public interface IKubernetesJobMonitor
+    public interface IKubernetesPodMonitor
     {
         Task StartAsync(CancellationToken token);
     }
 
-    public interface IKubernetesJobStatusProvider
+    public interface IKubernetesPodStatusProvider
     {
-        JobStatus? TryGetJobStatus(ScriptTicket scriptTicket);
+        PodStatus? TryGetPodStatus(ScriptTicket scriptTicket);
     }
 
-    public class KubernetesJobMonitor : IKubernetesJobMonitor, IKubernetesJobStatusProvider
+    public class KubernetesPodMonitor : IKubernetesPodMonitor, IKubernetesPodStatusProvider
     {
-        readonly IKubernetesJobService jobService;
         readonly IKubernetesPodService podService;
         readonly ISystemLog log;
-        readonly Dictionary<ScriptTicket, JobStatus> jobStatusLookup = new();
+        readonly Dictionary<ScriptTicket, PodStatus> podStatusLookup = new();
 
-        public KubernetesJobMonitor(IKubernetesJobService jobService, IKubernetesPodService podService, ISystemLog log)
+        public KubernetesPodMonitor(IKubernetesPodService podService, ISystemLog log)
         {
-            this.jobService = jobService;
             this.podService = podService;
             this.log = log;
         }
 
-        async Task IKubernetesJobMonitor.StartAsync(CancellationToken cancellationToken)
+        async Task IKubernetesPodMonitor.StartAsync(CancellationToken cancellationToken)
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                //initially load all the jobs and their status's
+                //initially load all the pods and their status's
                 var initialResourceVersion = await InitialLoadAsync(cancellationToken);
 
                 //we start the watch from the resource version we initially loaded. This means we receive w
-                await jobService.WatchAllJobsAsync(initialResourceVersion,async (type, job) =>
+                await podService.WatchAllPods(initialResourceVersion,async (type, pod) =>
                     {
+                        await Task.CompletedTask;
+
                         try
                         {
-                            log.Verbose($"Received {type} event for job {job.Name()}");
+                            log.Verbose($"Received {type} event for pod {pod.Name()}");
 
-                            var scriptTicket = job.GetScriptTicket();
+                            var scriptTicket = pod.GetScriptTicket();
 
                             switch (type)
                             {
                                 case WatchEventType.Added or WatchEventType.Modified:
                                 {
-                                    if (!jobStatusLookup.TryGetValue(scriptTicket, out var status))
+                                    if (!podStatusLookup.TryGetValue(scriptTicket, out var status))
                                     {
-                                        status = new JobStatus(job.GetScriptTicket());
-                                        jobStatusLookup[scriptTicket] = status;
+                                        status = new PodStatus(pod.GetScriptTicket());
+                                        podStatusLookup[scriptTicket] = status;
                                     }
 
-                                    await status.UpdateAsync(job, podService, cancellationToken);
-                                    log.Verbose($"Updated job {job.Name()} status. {status}");
+                                    status.Update(pod);
+                                    log.Verbose($"Updated pod {pod.Name()} status. {status}");
 
                                     break;
                                 }
                                 case WatchEventType.Deleted:
-                                    log.Verbose($"Removed {type} job {job.Name()} status");
+                                    log.Verbose($"Removed {type} pod {pod.Name()} status");
 
-                                    //if the job is deleted, remove it
-                                    jobStatusLookup.Remove(scriptTicket);
+                                    //if the pod is deleted, remove it
+                                    podStatusLookup.Remove(scriptTicket);
                                     break;
                                 default:
-                                    log.Warn($"Received watch event type {type} for job {job.Name()}. Ignoring as we don't need it");
+                                    log.Warn($"Received watch event type {type} for pod {pod.Name()}. Ignoring as we don't need it");
                                     break;
                             }
                         }
                         catch (Exception e)
                         {
-                            log.Error(e, $"Failed to process event {type} for job {job.Name()}.");
+                            log.Error(e, $"Failed to process event {type} for pod {pod.Name()}.");
                         }
                     }, ex =>
                     {
-                        log.Error(ex, "An unhandled error occured in monitoring the jobs");
+                        log.Error(ex, "An unhandled error occured in monitoring the pods");
                     }, cancellationToken
                 );
             }
@@ -91,31 +90,31 @@ namespace Octopus.Tentacle.Kubernetes
 
         async Task<string> InitialLoadAsync(CancellationToken cancellationToken)
         {
-            log.Verbose("Preloading job statuses");
+            log.Verbose("Preloading pod statuses");
             //clear the status'
-            jobStatusLookup.Clear();
+            podStatusLookup.Clear();
 
-            var allJobs = await jobService.ListAllJobsAsync(cancellationToken);
-            foreach (var job in allJobs.Items)
+            var allPods = await podService.ListAllPodsAsync(cancellationToken);
+            foreach (var pod in allPods.Items)
             {
-                var status = new JobStatus(job.GetScriptTicket());
-                await status.UpdateAsync(job, podService, cancellationToken);
+                var status = new PodStatus(pod.GetScriptTicket());
+                status.Update(pod);
 
-                log.Verbose($"Preloaded job {job.Name()}. {status}");
-                jobStatusLookup[status.ScriptTicket] = status;
+                log.Verbose($"Preloaded pod {pod.Name()}. {status}");
+                podStatusLookup[status.ScriptTicket] = status;
             }
 
-            log.Verbose($"Preloaded {allJobs.Items.Count} job statuses. ResourceVersion: {allJobs.ResourceVersion()}");
+            log.Verbose($"Preloaded {allPods.Items.Count} pod statuses. ResourceVersion: {allPods.ResourceVersion()}");
 
             //this is the resource version for the list. We use this to start the watch at this particular point
-            return allJobs.ResourceVersion();
+            return allPods.ResourceVersion();
         }
 
-        JobStatus? IKubernetesJobStatusProvider.TryGetJobStatus(ScriptTicket scriptTicket)
-            => jobStatusLookup.TryGetValue(scriptTicket, out var status) ? status : null;
+        PodStatus? IKubernetesPodStatusProvider.TryGetPodStatus(ScriptTicket scriptTicket)
+            => podStatusLookup.TryGetValue(scriptTicket, out var status) ? status : null;
     }
 
-    public class JobStatus
+    public class PodStatus
     {
         public ScriptTicket ScriptTicket { get; }
 
@@ -125,30 +124,27 @@ namespace Octopus.Tentacle.Kubernetes
 
         public int? ExitCode { get; private set; }
 
-        public JobStatus(ScriptTicket ticket)
+        public PodStatus(ScriptTicket ticket)
         {
             ScriptTicket = ticket;
         }
 
-        public async Task UpdateAsync(V1Job job, IKubernetesPodService podService, CancellationToken cancellationToken)
+        public void Update(V1Pod pod)
         {
-            var firstCondition = job.Status?.Conditions?.FirstOrDefault();
-            switch (firstCondition)
+            switch (pod.Status?.Phase)
             {
-                case { Status: "True", Type: "Complete" }:
+                case "Succeeded":
                     Success = true;
                     Failed = false;
                     ExitCode = 0;
                     break;
-                case { Status: "True", Type: "Failed" }:
+                case "Failed":
                     Success = false;
                     Failed = true;
 
-                    var pod = await podService.TryGetPodForJob(ScriptTicket, cancellationToken);
-
                     //find the status for the container
                     //we we can't determine the exit code from the pod container, just return 1
-                    ExitCode = pod?.Status?.ContainerStatuses?.FirstOrDefault()?.State?.Terminated?.ExitCode ?? 1;
+                    ExitCode = pod.Status?.ContainerStatuses?.FirstOrDefault()?.State?.Terminated?.ExitCode ?? 1;
 
                     break;
             }
@@ -158,8 +154,8 @@ namespace Octopus.Tentacle.Kubernetes
             => $"ScriptTicket: {ScriptTicket}, Success: {Success}, Failed: {Failed}, ExitCode: {ExitCode}";
     }
 
-    public static class V1JobExtensions
+    public static class V1PodExtensions
     {
-        public static ScriptTicket GetScriptTicket(this V1Job job) => new(job.GetLabel(OctopusLabels.ScriptTicketId));
+        public static ScriptTicket GetScriptTicket(this V1Pod pod) => new(pod.GetLabel(OctopusLabels.ScriptTicketId));
     }
 }
