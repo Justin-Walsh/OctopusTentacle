@@ -134,7 +134,7 @@ namespace Octopus.Tentacle.Commands
             workspaceCleanerTask.Value.Start();
             workspaceCleanerHasStarted = true;
 
-            if (PlatformDetection.Kubernetes.IsRunningInKubernetes)
+            if (KubernetesConfig.UsePods)
             {
                 kubernetesPodMonitorTask.Value.Start();
                 kubernetesPodMonitorHasStarted = true;

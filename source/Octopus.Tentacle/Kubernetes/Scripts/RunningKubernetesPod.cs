@@ -38,7 +38,7 @@ namespace Octopus.Tentacle.Kubernetes.Scripts
         readonly IKubernetesPodStatusProvider podStatusProvider;
         readonly IKubernetesSecretService secretService;
         readonly IKubernetesPodContainerResolver containerResolver;
-        readonly KubernetesJobScriptExecutionContext executionContext;
+        readonly KubernetesScriptExecutionContext executionContext;
         readonly CancellationToken scriptCancellationToken;
         readonly string? instanceName;
         readonly KubernetesPodOutputStreamWriter outputStreamWriter;
@@ -59,7 +59,7 @@ namespace Octopus.Tentacle.Kubernetes.Scripts
             IKubernetesSecretService secretService,
             IKubernetesPodContainerResolver containerResolver,
             IApplicationInstanceSelector appInstanceSelector,
-            KubernetesJobScriptExecutionContext executionContext,
+            KubernetesScriptExecutionContext executionContext,
             CancellationToken scriptCancellationToken)
         {
             this.workspace = workspace;
@@ -104,11 +104,11 @@ namespace Octopus.Tentacle.Kubernetes.Scripts
                             WriteVerbose(writer, $"Deleting Kubernetes Pod '{podName}'.");
                             //We delete the pob (because we no longer need it)
                             await podService.Delete(scriptTicket, CancellationToken.None);
-                            WriteVerbose(writer, $"Cancelled Kubernetes Pod '{podName}'.");
+                            WriteVerbose(writer, $"Deleted Kubernetes Pod '{podName}'.");
                         }
                         catch (Exception e)
                         {
-                            WriteError(writer, $"Failed to cancel Kubernetes Pod {podName}. {e}");
+                            WriteError(writer, $"Failed to delete Kubernetes Pod {podName}. {e}");
                         }
                     }, CancellationToken.None);
                 });

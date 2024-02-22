@@ -50,7 +50,7 @@ RETURN_VAL=$?
 
 # Write a message to say the job has completed
 echo "##octopus[stdout-verbose]"
-echo "Kubernetes Job completed"
+echo "Kubernetes Pod completed"
 echo "##octopus[stdout-default]"
 
 # This ungodly hack is to stop the pod from being killed before the last log has been flushed

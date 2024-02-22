@@ -27,7 +27,7 @@ namespace Octopus.Tentacle.Kubernetes.Scripts
             this.log = log;
         }
 
-        public bool CanExecute(StartScriptCommandV3Alpha command) => command.ExecutionContext is KubernetesJobScriptExecutionContext;
+        public bool CanExecute(StartScriptCommandV3Alpha command) => command.ExecutionContext is KubernetesScriptExecutionContext;
 
         public IRunningScript ExecuteOnBackgroundThread(StartScriptCommandV3Alpha command, IScriptWorkspace workspace, ScriptStateStore scriptStateStore, CancellationToken cancellationToken)
         {
@@ -42,7 +42,7 @@ namespace Octopus.Tentacle.Kubernetes.Scripts
                 secretService,
                 containerResolver,
                 appInstanceSelector,
-                (KubernetesJobScriptExecutionContext)command.ExecutionContext,
+                (KubernetesScriptExecutionContext)command.ExecutionContext,
                 cancellationToken);
 
             Task.Run(() => runningScript.Execute(), cancellationToken);

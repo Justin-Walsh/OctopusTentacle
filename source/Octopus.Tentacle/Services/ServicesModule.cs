@@ -23,7 +23,7 @@ namespace Octopus.Tentacle.Services
             builder.RegisterType<NuGetPackageInstaller>().As<IPackageInstaller>();
 
             // Register the script executor based on if we should
-            if (KubernetesConfig.UseJobs)
+            if (KubernetesConfig.UsePods)
             {
                 builder.RegisterType<KubernetesPodScriptExecutor>().AsSelf().As<IScriptExecutor>();
             }
