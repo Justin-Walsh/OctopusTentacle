@@ -33,7 +33,7 @@ namespace Octopus.Tentacle.Kubernetes
             this.podService = podService;
             this.log = log;
             podName = pod.Name();
-            containerName = pod.Spec.Containers.First().Name;
+            containerName = pod.Spec.Containers.Single().Name;
         }
 
         public void StartMonitoring(CancellationToken cancellationToken)

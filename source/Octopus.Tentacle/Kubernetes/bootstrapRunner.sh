@@ -35,14 +35,19 @@ exec 2> >(logStdErr >&2)
 # Change cwd to the working directory
 cd "$WORK_DIR" || return
 
+# Write a message to say the script has start
+echo "##octopus[stdout-verbose]"
+echo "Script started"
+echo "##octopus[stdout-default]"
+
 /bin/bash "$BOOTSTRAP_SCRIPT" "$@"
 
 #Get the return value from the previous script
 RETURN_VAL=$?
 
-# Write a message to say the job has completed
+# Write a message to say the script has completed
 echo "##octopus[stdout-verbose]"
-echo "Kubernetes Job completed"
+echo "Script completed"
 echo "##octopus[stdout-default]"
 
 echo "EOS-075CD4F0-8C76-491D-BA76-0879D35E9CFE<<>>$RETURN_VAL"

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using k8s;
@@ -33,6 +35,7 @@ namespace Octopus.Tentacle.Kubernetes
     {
         readonly ISystemLog log;
         readonly AsyncRetryPolicy<Stream> logRetryPolicy;
+        readonly PodLogReader podLogReader;
 
         public KubernetesPodService(IKubernetesClientConfigProvider configProvider, ISystemLog log)
             : base(configProvider)
@@ -60,6 +63,7 @@ namespace Octopus.Tentacle.Kubernetes
                             log.Warn(result.Exception, $"Failed to read namespaced logs for pod {podName}.");
                         }
                     });
+            podLogReader = new PodLogReader(configProvider);
         }
 
         public async Task<V1PodList> ListAllPods(CancellationToken cancellationToken)
@@ -126,11 +130,7 @@ namespace Octopus.Tentacle.Kubernetes
                 };
                 //we use a polly retry policy to handle all the
                 var logStream = await logRetryPolicy.ExecuteAsync(
-                    async (_, ct) => await Client.ReadNamespacedPodLogAsync(podName,
-                        KubernetesConfig.Namespace,
-                        containerName,
-                        sinceSeconds: secondsSince,
-                        cancellationToken: ct),
+                    async (_, ct) => await podLogReader.ReadPodLogsSince(podName, containerName, ct, "2024-03-11T09:59:27+00:00"),
                     retryContext,
                     cancellationToken);
 
@@ -190,6 +190,7 @@ namespace Octopus.Tentacle.Kubernetes
 
         static ulong CalculateHash(string read)
         {
+            //var foo = SHA512.Create().ComputeHash(Encoding.Unicode.GetBytes(read));
             var hashedValue = 3074457345618258791ul;
             for (var i = 0; i < read.Length; i++)
             {
