@@ -55,5 +55,7 @@ echo "EOS-075CD4F0-8C76-491D-BA76-0879D35E9CFE<<>>$RETURN_VAL"
 # This ungodly hack is to stop the pod from being killed before the last log has been flushed
 sleep 0.250 #250ms
 
+echo "always missing"
+
 #Propagate the return value from the bootstrap script to the output host
 exit "$RETURN_VAL"
