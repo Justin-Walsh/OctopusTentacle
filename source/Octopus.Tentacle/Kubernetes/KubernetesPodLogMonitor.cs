@@ -129,13 +129,16 @@ namespace Octopus.Tentacle.Kubernetes
                     continue;
 
                 var parts = logLine.Split('|');
-                if (parts.Length != 3)
+                if (parts.Length != 4)
                 {
                     log.Verbose($"Received pod log in the wrong format: '{logLine}'");
                     continue;
                 }
 
-                var message = parts[2];
+                var lineNo = int.Parse(parts[0]);
+                var timestamp = parts[1];
+                var sourceString = parts[2];
+                var message = parts[3];
 
                 //if this is the end of m
                 if (message.StartsWith(KubernetesConfig.EndOfScriptControlMessage, StringComparison.OrdinalIgnoreCase))
@@ -147,18 +150,18 @@ namespace Octopus.Tentacle.Kubernetes
                     break;
                 }
 
-                var occured = DateTimeOffset.Parse(parts[0]);
-                var source = parts[1] switch
+                var occured = DateTimeOffset.Parse(timestamp);
+                var source = sourceString switch
                 {
                     "stdout" => ProcessOutputSource.StdOut,
                     "stderr" => ProcessOutputSource.StdErr,
-                    _ => throw new InvalidOperationException($"Unknown source {parts[1]}")
+                    _ => throw new InvalidOperationException($"Unknown source {sourceString}")
                 };
 
                 lock (logLock)
                 {
                     //we are making a bold assumption that the pod logs are coming in sequential order
-                    logLines.Add(new PodLogLine(occured, source, parts[2]));
+                    logLines.Add(new PodLogLine(occured, source, message));
                 }
             }
         }
