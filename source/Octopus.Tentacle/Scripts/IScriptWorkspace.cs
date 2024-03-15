@@ -22,5 +22,6 @@ namespace Octopus.Tentacle.Scripts
         string LogFilePath { get; }
         void WriteFile(string filename, string contents);
         Stream OpenFileStreamForReading(string filename);
+        void WriteAllBytes(string filename, byte[] contents);
     }
 }

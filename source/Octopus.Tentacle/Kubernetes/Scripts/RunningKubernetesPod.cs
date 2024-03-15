@@ -37,6 +37,14 @@ namespace Octopus.Tentacle.Kubernetes.Scripts
             using var reader = new StreamReader(stream!, Encoding.UTF8);
             return await reader.ReadToEndAsync();
         });
+        
+        static readonly AsyncLazy<byte[]> BootstrapRunnerExe = new(async () =>
+        {
+            using var stream = typeof(RunningKubernetesPod).Assembly.GetManifestResourceStream("Octopus.Tentacle.Kubernetes.bootstrap");
+            var mem = new MemoryStream();
+            await stream!.CopyToAsync(mem);
+            return mem.ToArray();
+        });
 
         readonly IScriptWorkspace workspace;
         readonly ScriptTicket scriptTicket;
@@ -341,6 +349,7 @@ namespace Octopus.Tentacle.Kubernetes.Scripts
 
             //write the bootstrap runner script to the workspace
             workspace.WriteFile("bootstrapRunner.sh", await BootstrapRunnerScript.Task);
+            workspace.WriteAllBytes("bootstrap", await BootstrapRunnerExe.Task);
 
             var scriptName = Path.GetFileName(workspace.BootstrapScriptFilePath);
 
@@ -370,7 +379,7 @@ namespace Octopus.Tentacle.Kubernetes.Scripts
                             Command = new List<string> { "bash" },
                             Args = new List<string>
                                 {
-                                    $"/octopus/Work/{scriptTicket.TaskId}/bootstrapRunner.sh",
+                                    $"/octopus/Work/{scriptTicket.TaskId}/bootstrap",
                                     $"/octopus/Work/{scriptTicket.TaskId}/{scriptName}"
                                 }.Concat(workspace.ScriptArguments ?? Array.Empty<string>())
                                 .ToList(),
