@@ -14,6 +14,7 @@ using Octopus.Diagnostics;
 using Octopus.Tentacle.Configuration.Instances;
 using Octopus.Tentacle.Contracts.ScriptServiceV3Alpha;
 using Octopus.Tentacle.Scripts;
+using Octopus.Tentacle.Util;
 using Octopus.Tentacle.Variables;
 
 namespace Octopus.Tentacle.Kubernetes
@@ -166,6 +167,16 @@ namespace Octopus.Tentacle.Kubernetes
             //workspace.WriteFile("bootstrapRunner.sh", await BootstrapRunnerScript.Task);
             workspace.WriteAllBytes("bootstrap", await BootstrapRunnerExe.Task);
 
+            var exitCode = SilentProcessRunner.ExecuteCommand(
+                "chmod",
+                "755 " + workspace.ResolvePath("bootstrap"),
+                workspace.WorkingDirectory,
+                output => log.Info(output),
+                output => log.Info(output),
+                output => log.Error(output),
+                cancellationToken);
+
+            log.Info("Chmod exit code: " + exitCode);
             var scriptName = Path.GetFileName(workspace.BootstrapScriptFilePath);
 
             //Deserialize the volume configuration from the environment configuration
