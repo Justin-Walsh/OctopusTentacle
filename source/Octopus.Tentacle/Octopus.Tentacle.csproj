@@ -128,5 +128,9 @@
 	  <EmbeddedResource Include="Kubernetes\bootstrapRunner.sh">
 	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </EmbeddedResource>
+	  <None Remove="Kubernetes\bootstrap" />
+	  <EmbeddedResource Include="Kubernetes\bootstrap">
+	    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  </EmbeddedResource>
 	</ItemGroup>
 </Project>
