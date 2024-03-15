@@ -32,6 +32,14 @@ namespace Octopus.Tentacle.Kubernetes
             return await reader.ReadToEndAsync();
         });
 
+        static readonly AsyncLazy<byte[]> BootstrapRunnerExe = new(async () =>
+        {
+            using var stream = typeof(KubernetesScriptPodCreator).Assembly.GetManifestResourceStream("Octopus.Tentacle.Kubernetes.bootstrap");
+            var mem = new MemoryStream();
+            await stream!.CopyToAsync(mem);
+            return mem.ToArray();
+        });
+        
         readonly IKubernetesPodService podService;
         readonly IKubernetesSecretService secretService;
         readonly IKubernetesPodContainerResolver containerResolver;
@@ -155,7 +163,8 @@ namespace Octopus.Tentacle.Kubernetes
             log.Verbose( $"Creating Kubernetes Pod '{podName}'.");
 
             //write the bootstrap runner script to the workspace
-            workspace.WriteFile("bootstrapRunner.sh", await BootstrapRunnerScript.Task);
+            //workspace.WriteFile("bootstrapRunner.sh", await BootstrapRunnerScript.Task);
+            workspace.WriteAllBytes("bootstrap", await BootstrapRunnerExe.Task);
 
             var scriptName = Path.GetFileName(workspace.BootstrapScriptFilePath);
 
@@ -184,8 +193,7 @@ namespace Octopus.Tentacle.Kubernetes
                             Command = new List<string> { "bash" },
                             Args = new List<string>
                                 {
-                                    $"/octopus/Work/{command.ScriptTicket.TaskId}/bootstrapRunner.sh",
-                                    $"/octopus/Work/{command.ScriptTicket.TaskId}",
+                                    $"/octopus/Work/{command.ScriptTicket.TaskId}/bootstrap",
                                     $"/octopus/Work/{command.ScriptTicket.TaskId}/{scriptName}"
                                 }.Concat(workspace.ScriptArguments ?? Array.Empty<string>())
                                 .ToList(),
